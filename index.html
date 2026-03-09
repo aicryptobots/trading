@@ -2492,70 +2492,7 @@
         .text-center { text-align: center; }
     </style>
 </head>
-    <script>
-
-// Disable Right Click
-document.addEventListener("contextmenu", function(e){
-  e.preventDefault();
-});
-
-// Disable Text Selection
-document.onselectstart = function () {
-  return false;
-};
-
-// Disable Copy
-document.addEventListener("copy", function(e){
-  e.preventDefault();
-});
-
-// Disable Drag (image download)
-document.addEventListener("dragstart", function(e){
-  e.preventDefault();
-});
-
-// Disable keyboard shortcuts
-document.onkeydown = function(e) {
-
-  // F12
-  if (e.keyCode == 123) {
-    return false;
-  }
-
-  // Ctrl+Shift+I
-  if (e.ctrlKey && e.shiftKey && e.keyCode == 73) {
-    return false;
-  }
-
-  // Ctrl+Shift+J
-  if (e.ctrlKey && e.shiftKey && e.keyCode == 74) {
-    return false;
-  }
-
-  // Ctrl+U
-  if (e.ctrlKey && e.keyCode == 85) {
-    return false;
-  }
-
-  // Ctrl+C
-  if (e.ctrlKey && e.keyCode == 67) {
-    return false;
-  }
-
-};
-
-// Detect DevTools
-setInterval(function() {
-  var devtools = /./;
-  devtools.toString = function() {
-    window.location.href = "about:blank";
-  }
-  console.log('%c', devtools);
-}, 1000);
-
-console.log("Stop! This website is protected.");
-
-</script>
+   
 <body>
     <!-- ==================== LOGIN PAGE ==================== -->
     <div class="login-container" id="loginPage">
