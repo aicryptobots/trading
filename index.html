@@ -2492,77 +2492,79 @@
         .text-center { text-align: center; }
     </style>
 </head>
-<body>
     <script>
 
 // Disable Right Click
 document.addEventListener("contextmenu", function(e){
-  e.preventDefault();
+e.preventDefault();
 });
 
 // Disable Text Selection
-document.onselectstart = function () {
-  return false;
+document.onselectstart=function(){
+return false;
 };
 
 // Disable Copy
 document.addEventListener("copy", function(e){
-  e.preventDefault();
+e.preventDefault();
 });
 
-// Disable Image Drag
+// Disable Drag (image protect)
 document.addEventListener("dragstart", function(e){
-  e.preventDefault();
+e.preventDefault();
 });
 
 // Disable Keyboard Shortcuts
-document.onkeydown = function(e) {
+document.onkeydown=function(e){
 
-  // F12
-  if (e.keyCode == 123) {
-    return false;
-  }
+// F12
+if(e.keyCode==123){
+return false;
+}
 
-  // Ctrl+Shift+I
-  if (e.ctrlKey && e.shiftKey && e.keyCode == 73) {
-    return false;
-  }
+// Ctrl+Shift+I
+if(e.ctrlKey && e.shiftKey && e.keyCode==73){
+return false;
+}
 
-  // Ctrl+Shift+J
-  if (e.ctrlKey && e.shiftKey && e.keyCode == 74) {
-    return false;
-  }
+// Ctrl+Shift+J
+if(e.ctrlKey && e.shiftKey && e.keyCode==74){
+return false;
+}
 
-  // Ctrl+U
-  if (e.ctrlKey && e.keyCode == 85) {
-    return false;
-  }
+// Ctrl+U
+if(e.ctrlKey && e.keyCode==85){
+return false;
+}
 
-  // Ctrl+C
-  if (e.ctrlKey && e.keyCode == 67) {
-    return false;
-  }
-
-  // Ctrl+S
-  if (e.ctrlKey && e.keyCode == 83) {
-    return false;
-  }
+// Ctrl+C
+if(e.ctrlKey && e.keyCode==67){
+return false;
+}
 
 };
 
-// Detect DevTools
-setInterval(function() {
-  const devtools = /./;
-  devtools.toString = function() {
-    window.location.href = "about:blank";
-  }
-  console.log('%c', devtools);
-}, 1000);
+// Screenshot Protection (Print Screen)
+document.addEventListener("keyup",function(e){
+if(e.key=="PrintScreen"){
+document.body.style.filter="blur(20px)";
+alert("Screenshot blocked!");
+}
+});
 
-// Console Warning
+// DevTools Detect
+setInterval(function(){
+var devtools=/./;
+devtools.toString=function(){
+window.location.href="about:blank";
+}
+console.log('%c',devtools);
+},1000);
+
 console.log("Stop! This website is protected.");
 
 </script>
+<body>
     <!-- ==================== LOGIN PAGE ==================== -->
     <div class="login-container" id="loginPage">
         <div class="login-box">
