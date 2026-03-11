@@ -4,7 +4,210 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>PRIME AI TRADING BOT | Fixed Device Limit & Real-time Prices</title>
+    <!-- ==================== COMPLETE SECURITY SYSTEM ==================== -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://translate.google.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' https://api.binance.com;">
+<meta name="referrer" content="no-referrer">
+
+<style>
+/* ===== SECURITY CSS ===== */
+* {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    -webkit-tap-highlight-color: transparent;
+}
+
+img, a, div {
+    -webkit-user-drag: none;
+    user-drag: none;
+}
+
+body {
+    -webkit-touch-callout: none;
+}
+
+.anti-devtools {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent;
+    z-index: 999999;
+    pointer-events: none;
+}
+
+.watermark {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    color: rgba(255,255,255,0.05);
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 99999;
+    transform: rotate(-5deg);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -20px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+@media (max-width: 768px) {
+    .anti-devtools {
+        display: block;
+    }
+}
+</style>
+
+<script>
+(function() {
+    'use strict';
     
+    // Disable keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F12' || 
+            (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+            (e.ctrlKey && e.shiftKey && e.key === 'J') || 
+            (e.ctrlKey && e.key === 'u') || 
+            (e.ctrlKey && e.key === 'U') ||
+            (e.ctrlKey && e.key === 's') ||
+            (e.ctrlKey && e.key === 'S') ||
+            (e.ctrlKey && e.key === 'c') ||
+            (e.ctrlKey && e.key === 'C')) {
+            
+            e.preventDefault();
+            e.stopPropagation();
+            showAlert('Developer tools are disabled');
+            return false;
+        }
+    }, true);
+    
+    // Disable right click
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        showAlert('Right click is disabled');
+        return false;
+    }, true);
+    
+    // Detect devtools
+    let devtoolsOpen = false;
+    const threshold = 160;
+    
+    function detectDevTools() {
+        const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+        const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+        
+        if (widthThreshold || heightThreshold) {
+            if (!devtoolsOpen) {
+                devtoolsOpen = true;
+                showAlert('Developer tools detected! Please close them.');
+                document.body.style.opacity = '0.5';
+            }
+        } else {
+            if (devtoolsOpen) {
+                devtoolsOpen = false;
+                document.body.style.opacity = '1';
+            }
+        }
+    }
+    
+    setInterval(detectDevTools, 1000);
+    
+    // Disable print screen
+    document.addEventListener('keyup', function(e) {
+        if (e.key === 'PrintScreen') {
+            navigator.clipboard.writeText('').catch(() => {});
+            showAlert('Screenshots are disabled');
+        }
+    });
+    
+    // Disable text selection
+    document.addEventListener('selectstart', function(e) {
+        e.preventDefault();
+        return false;
+    }, true);
+    
+    document.addEventListener('dragstart', function(e) {
+        e.preventDefault();
+        return false;
+    }, true);
+    
+    // Disable copy
+    document.addEventListener('copy', function(e) {
+        e.preventDefault();
+        e.clipboardData.setData('text/plain', 'Copying is disabled');
+        showAlert('Copying is disabled');
+        return false;
+    }, true);
+    
+    document.addEventListener('cut', function(e) {
+        e.preventDefault();
+        return false;
+    }, true);
+    
+    document.addEventListener('paste', function(e) {
+        e.preventDefault();
+        return false;
+    }, true);
+    
+    // Add overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'anti-devtools';
+    document.body.appendChild(overlay);
+    
+    // Add watermark
+    const watermark = document.createElement('div');
+    watermark.className = 'watermark';
+    watermark.innerHTML = 'PRIME AI • CONFIDENTIAL';
+    document.body.appendChild(watermark);
+    
+    // Alert function
+    function showAlert(message) {
+        let alert = document.getElementById('security-alert');
+        if (!alert) {
+            alert = document.createElement('div');
+            alert.id = 'security-alert';
+            alert.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #EF4444;
+                color: white;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                z-index: 1000000;
+                box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
+                animation: slideDown 0.3s ease;
+                text-align: center;
+            `;
+            document.body.appendChild(alert);
+        }
+        alert.textContent = message;
+        
+        setTimeout(() => {
+            if (alert) alert.remove();
+        }, 3000);
+    }
+    
+    // Override console
+    const methods = ['log', 'info', 'warn', 'error', 'debug'];
+    methods.forEach(m => console[m] = function() {});
+    
+})();
+</script>
+<!-- ================ END SECURITY SYSTEM ================ -->
     <!-- Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.2/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.0/build/global/luxon.min.js"></script>
