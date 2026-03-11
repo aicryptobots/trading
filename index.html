@@ -4,80 +4,219 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>PRIME AI TRADING BOT | Fixed Device Limit & Real-time Prices</title>
-   <!-- ==================== SIMPLE SECURITY SYSTEM ==================== -->
+ <!-- ================ ULTIMATE SECURITY SYSTEM ================ -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
 <style>
-/* Disable right click and selection - but allow in inputs */
-body {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+/* ===== EXTREME SECURITY ===== */
+/* Disable everything */
+* {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    -webkit-user-drag: none !important;
+    user-drag: none !important;
+    -webkit-touch-callout: none !important;
+    pointer-events: auto;
 }
 
-/* Allow selection in input fields */
-input, textarea, [contenteditable="true"] {
+/* Allow only input fields to work */
+input, textarea, button, select, a {
     -webkit-user-select: text !important;
     -moz-user-select: text !important;
     -ms-user-select: text !important;
     user-select: text !important;
+    pointer-events: auto !important;
+}
+
+/* Full screen overlay to block devtools */
+.devtools-blocker {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    z-index: 999999;
+    pointer-events: none;
+}
+
+/* Invisible iframe to block devtools */
+.anti-devtools-frame {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    opacity: 0;
+    z-index: 999998;
+    pointer-events: none;
 }
 
 /* Watermark */
 .watermark {
     position: fixed;
-    bottom: 5px;
-    right: 5px;
-    color: rgba(255,255,255,0.1);
-    font-size: 11px;
+    bottom: 2px;
+    right: 2px;
+    color: rgba(255,255,255,0.03);
+    font-size: 8px;
     pointer-events: none;
-    z-index: 9999;
+    z-index: 999999;
+    white-space: nowrap;
 }
 </style>
 
+<!-- Anti-devtools iframe -->
+<iframe class="anti-devtools-frame" srcdoc="<script>window.onload=function(){setInterval(function(){if(window.outerHeight-window.innerHeight>200||window.outerWidth-window.innerWidth>200){document.body.style.opacity='0.1'}},100)}</script>"></iframe>
+
+<div class="devtools-blocker"></div>
+
 <script>
 (function() {
-    // Don't run on admin panel
+    'use strict';
+    
+    // Skip for admin
     if (window.location.href.includes('admin')) return;
     
-    // Disable right click
+    // ===== 1. BLOCK ALL KEYBOARD SHORTCUTS =====
+    const blockedKeys = [
+        'F12', 'F11', 'F5', 'F3', 'F7',
+        'I', 'J', 'C', 'U', 'S', 'P', 'V'
+    ];
+    
+    document.addEventListener('keydown', function(e) {
+        // Allow typing in inputs
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return true;
+        
+        // Block all devtools shortcuts
+        if (e.key === 'F12' || 
+            (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+            (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+            (e.ctrlKey && e.key === 'U') ||
+            (e.ctrlKey && e.key === 'S') ||
+            (e.ctrlKey && e.key === 'P') ||
+            (e.ctrlKey && e.key === 'C') ||
+            (e.ctrlKey && e.key === 'V') ||
+            (e.metaKey && e.altKey && e.key === 'I') ||
+            (e.metaKey && e.altKey && e.key === 'J')) {
+            
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+        
+        // Block function keys
+        if (e.key.startsWith('F') && !isNaN(e.key.slice(1))) {
+            e.preventDefault();
+            return false;
+        }
+    }, true);
+    
+    // ===== 2. BLOCK RIGHT CLICK =====
     document.addEventListener('contextmenu', function(e) {
-        // Allow on input fields
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return true;
         e.preventDefault();
         return false;
-    });
+    }, true);
     
-    // Disable F12 and Ctrl+Shift+I
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
-            e.preventDefault();
-            alert('Developer tools are disabled');
-            return false;
+    // ===== 3. DETECT AND BLOCK DEVTOOLS =====
+    let devtoolsOpen = false;
+    
+    function checkDevTools() {
+        const widthDiff = window.outerWidth - window.innerWidth;
+        const heightDiff = window.outerHeight - window.innerHeight;
+        
+        if (widthDiff > 200 || heightDiff > 200) {
+            if (!devtoolsOpen) {
+                devtoolsOpen = true;
+                document.body.style.opacity = '0.1';
+                document.body.style.pointerEvents = 'none';
+                
+                // Redirect or reload
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        } else {
+            if (devtoolsOpen) {
+                devtoolsOpen = false;
+                document.body.style.opacity = '1';
+                document.body.style.pointerEvents = 'auto';
+            }
         }
-    });
+    }
     
-    // Disable Ctrl+U (view source)
-    document.addEventListener('keydown', function(e) {
-        if (e.ctrlKey && e.key === 'u') {
-            e.preventDefault();
-            alert('View source is disabled');
-            return false;
+    setInterval(checkDevTools, 500);
+    
+    // ===== 4. DEBUGGER LOOP =====
+    (function debuggerLoop() {
+        if (!window.location.href.includes('admin')) {
+            debugger;
+            setTimeout(debuggerLoop, 50);
         }
-    });
+    })();
     
-    // Disable copy on non-input elements
+    // ===== 5. BLOCK COPY/PASTE/CUT =====
     document.addEventListener('copy', function(e) {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return true;
         e.preventDefault();
-        alert('Copying is disabled');
         return false;
+    }, true);
+    
+    document.addEventListener('cut', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return true;
+        e.preventDefault();
+        return false;
+    }, true);
+    
+    document.addEventListener('paste', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return true;
+        e.preventDefault();
+        return false;
+    }, true);
+    
+    // ===== 6. BLOCK SELECTION =====
+    document.addEventListener('selectstart', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return true;
+        e.preventDefault();
+        return false;
+    }, true);
+    
+    // ===== 7. OVERRIDE CONSOLE =====
+    const consoleMethods = ['log', 'info', 'warn', 'error', 'debug', 'dir', 'table'];
+    consoleMethods.forEach(method => {
+        console[method] = function() {};
     });
     
-    // Add watermark
+    // ===== 8. BLOCK DEVTOOLS OPENING =====
+    Object.defineProperty(window, 'console', {
+        get: function() {
+            if (!window.location.href.includes('admin')) {
+                window.location.reload();
+            }
+        },
+        set: function() {}
+    });
+    
+    // ===== 9. ADD WATERMARK =====
     const watermark = document.createElement('div');
     watermark.className = 'watermark';
-    watermark.textContent = 'PRIME AI';
+    watermark.textContent = '█'.repeat(1000); // Creates a line of blocks
     document.body.appendChild(watermark);
+    
+    // ===== 10. PERIODIC SECURITY CHECK =====
+    setInterval(function() {
+        if (!window.location.href.includes('admin')) {
+            if (window.outerWidth - window.innerWidth > 200 || 
+                window.outerHeight - window.innerHeight > 200) {
+                window.location.reload();
+            }
+        }
+    }, 100);
     
 })();
 </script>
@@ -5261,54 +5400,222 @@ input, textarea, [contenteditable="true"] {
 }
 </style>
 
+<!-- ================ ULTIMATE SECURITY SYSTEM ================ -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
+<style>
+/* ===== EXTREME SECURITY ===== */
+/* Disable everything */
+* {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    -webkit-user-drag: none !important;
+    user-drag: none !important;
+    -webkit-touch-callout: none !important;
+    pointer-events: auto;
+}
+
+/* Allow only input fields to work */
+input, textarea, button, select, a {
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
+    pointer-events: auto !important;
+}
+
+/* Full screen overlay to block devtools */
+.devtools-blocker {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    z-index: 999999;
+    pointer-events: none;
+}
+
+/* Invisible iframe to block devtools */
+.anti-devtools-frame {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    opacity: 0;
+    z-index: 999998;
+    pointer-events: none;
+}
+
+/* Watermark */
+.watermark {
+    position: fixed;
+    bottom: 2px;
+    right: 2px;
+    color: rgba(255,255,255,0.03);
+    font-size: 8px;
+    pointer-events: none;
+    z-index: 999999;
+    white-space: nowrap;
+}
+</style>
+
+<!-- Anti-devtools iframe -->
+<iframe class="anti-devtools-frame" srcdoc="<script>window.onload=function(){setInterval(function(){if(window.outerHeight-window.innerHeight>200||window.outerWidth-window.innerWidth>200){document.body.style.opacity='0.1'}},100)}</script>"></iframe>
+
+<div class="devtools-blocker"></div>
+
 <script>
 (function() {
-    // Don't run on admin panel
+    'use strict';
+    
+    // Skip for admin
     if (window.location.href.includes('admin')) return;
     
-    // Disable right click
+    // ===== 1. BLOCK ALL KEYBOARD SHORTCUTS =====
+    const blockedKeys = [
+        'F12', 'F11', 'F5', 'F3', 'F7',
+        'I', 'J', 'C', 'U', 'S', 'P', 'V'
+    ];
+    
+    document.addEventListener('keydown', function(e) {
+        // Allow typing in inputs
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return true;
+        
+        // Block all devtools shortcuts
+        if (e.key === 'F12' || 
+            (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+            (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+            (e.ctrlKey && e.key === 'U') ||
+            (e.ctrlKey && e.key === 'S') ||
+            (e.ctrlKey && e.key === 'P') ||
+            (e.ctrlKey && e.key === 'C') ||
+            (e.ctrlKey && e.key === 'V') ||
+            (e.metaKey && e.altKey && e.key === 'I') ||
+            (e.metaKey && e.altKey && e.key === 'J')) {
+            
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+        
+        // Block function keys
+        if (e.key.startsWith('F') && !isNaN(e.key.slice(1))) {
+            e.preventDefault();
+            return false;
+        }
+    }, true);
+    
+    // ===== 2. BLOCK RIGHT CLICK =====
     document.addEventListener('contextmenu', function(e) {
-        // Allow on input fields
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return true;
         e.preventDefault();
         return false;
-    });
+    }, true);
     
-    // Disable F12 and Ctrl+Shift+I
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
-            e.preventDefault();
-            alert('Developer tools are disabled');
-            return false;
+    // ===== 3. DETECT AND BLOCK DEVTOOLS =====
+    let devtoolsOpen = false;
+    
+    function checkDevTools() {
+        const widthDiff = window.outerWidth - window.innerWidth;
+        const heightDiff = window.outerHeight - window.innerHeight;
+        
+        if (widthDiff > 200 || heightDiff > 200) {
+            if (!devtoolsOpen) {
+                devtoolsOpen = true;
+                document.body.style.opacity = '0.1';
+                document.body.style.pointerEvents = 'none';
+                
+                // Redirect or reload
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        } else {
+            if (devtoolsOpen) {
+                devtoolsOpen = false;
+                document.body.style.opacity = '1';
+                document.body.style.pointerEvents = 'auto';
+            }
         }
-    });
+    }
     
-    // Disable Ctrl+U (view source)
-    document.addEventListener('keydown', function(e) {
-        if (e.ctrlKey && e.key === 'u') {
-            e.preventDefault();
-            alert('View source is disabled');
-            return false;
+    setInterval(checkDevTools, 500);
+    
+    // ===== 4. DEBUGGER LOOP =====
+    (function debuggerLoop() {
+        if (!window.location.href.includes('admin')) {
+            debugger;
+            setTimeout(debuggerLoop, 50);
         }
-    });
+    })();
     
-    // Disable copy on non-input elements
+    // ===== 5. BLOCK COPY/PASTE/CUT =====
     document.addEventListener('copy', function(e) {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return true;
         e.preventDefault();
-        alert('Copying is disabled');
         return false;
+    }, true);
+    
+    document.addEventListener('cut', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return true;
+        e.preventDefault();
+        return false;
+    }, true);
+    
+    document.addEventListener('paste', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return true;
+        e.preventDefault();
+        return false;
+    }, true);
+    
+    // ===== 6. BLOCK SELECTION =====
+    document.addEventListener('selectstart', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return true;
+        e.preventDefault();
+        return false;
+    }, true);
+    
+    // ===== 7. OVERRIDE CONSOLE =====
+    const consoleMethods = ['log', 'info', 'warn', 'error', 'debug', 'dir', 'table'];
+    consoleMethods.forEach(method => {
+        console[method] = function() {};
     });
     
-    // Add watermark
+    // ===== 8. BLOCK DEVTOOLS OPENING =====
+    Object.defineProperty(window, 'console', {
+        get: function() {
+            if (!window.location.href.includes('admin')) {
+                window.location.reload();
+            }
+        },
+        set: function() {}
+    });
+    
+    // ===== 9. ADD WATERMARK =====
     const watermark = document.createElement('div');
     watermark.className = 'watermark';
-    watermark.textContent = 'PRIME AI';
+    watermark.textContent = '█'.repeat(1000); // Creates a line of blocks
     document.body.appendChild(watermark);
+    
+    // ===== 10. PERIODIC SECURITY CHECK =====
+    setInterval(function() {
+        if (!window.location.href.includes('admin')) {
+            if (window.outerWidth - window.innerWidth > 200 || 
+                window.outerHeight - window.innerHeight > 200) {
+                window.location.reload();
+            }
+        }
+    }, 100);
     
 })();
 </script>
 <!-- ================ END SECURITY ================ -->
-<!-- ================ END SECURITY SYSTEM ================ -->
 </body>
 </html>
