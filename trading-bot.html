@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Auto Trading Bot | AI Signals + RSI | P&L & Win Rate</title>
+    <title>Auto Trading Bot | AI Signal + Confidence | $500 Trades</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #0a0c12;
@@ -13,39 +17,209 @@
             padding: 20px;
         }
         .bot-container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
             background: #0f111a;
-            border-radius: 24px;
+            border-radius: 28px;
             border: 1px solid #2a2f3f;
-            padding: 20px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
         }
-        h2 { font-size: 1.5rem; margin-bottom: 10px; color: #3b82f6; display: flex; align-items: center; gap: 10px; }
-        .signal-box { background: #1a1f2a; border-radius: 16px; padding: 15px; margin-bottom: 20px; text-align: center; border: 1px solid #2a3040; }
-        .signal-label { font-size: 0.8rem; color: #8a8f9f; }
-        .signal-value { font-size: 2rem; font-weight: bold; }
+        h2 {
+            font-size: 1.6rem;
+            margin-bottom: 16px;
+            color: #3b82f6;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .signal-box {
+            background: #1a1f2a;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 24px;
+            text-align: center;
+            border: 1px solid #2a3040;
+        }
+        .signal-label {
+            font-size: 0.85rem;
+            color: #8a8f9f;
+            letter-spacing: 1px;
+        }
+        .signal-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+        }
         .signal-value.buy { color: #22c55e; }
         .signal-value.sell { color: #ef4444; }
         .signal-value.neutral { color: #f59e0b; }
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; text-align: center; }
-        .stat-card { background: #1a1f2a; padding: 10px; border-radius: 12px; }
-        .stat-label { font-size: 0.7rem; color: #8a8f9f; }
-        .stat-value { font-size: 1.2rem; font-weight: bold; }
-        .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: center; justify-content: space-between; }
-        button, select { background: #1e2436; border: 1px solid #3b82f6; color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
-        button:hover { background: #3b82f6; transform: scale(1.02); }
+        .confidence {
+            font-size: 1rem;
+            margin-top: 8px;
+            color: #94a3b8;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: #1a1f2a;
+            padding: 14px;
+            border-radius: 16px;
+            text-align: center;
+            transition: 0.2s;
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: #8a8f9f;
+            text-transform: uppercase;
+        }
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-top: 6px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 24px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        button, select {
+            background: #1e2436;
+            border: 1px solid #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        button:hover {
+            background: #3b82f6;
+            transform: translateY(-1px);
+        }
         .trade-btn.buy { background: #22c55e; border-color: #22c55e; }
         .trade-btn.sell { background: #ef4444; border-color: #ef4444; }
-        .status { background: #1a1f2a; padding: 10px; border-radius: 12px; font-family: monospace; font-size: 0.85rem; margin-top: 15px; text-align: center; }
-        .position-item { border-left: 3px solid; padding: 8px; margin: 8px 0; background: #0f111a; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .position-details { flex: 1; }
-        .position-pnl { font-weight: bold; }
+        .status {
+            background: #1a1f2a;
+            padding: 12px;
+            border-radius: 14px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .position-item {
+            border-left: 4px solid;
+            padding: 12px;
+            margin: 10px 0;
+            background: #0f111a;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .position-details { flex: 2; }
+        .position-pnl { font-weight: bold; font-size: 1rem; }
         .profit { color: #22c55e; }
         .loss { color: #ef4444; }
-        .close-btn { background: #ef4444; border: none; padding: 4px 12px; border-radius: 4px; color: white; cursor: pointer; }
-        .history-btn { background: #3b82f6; margin-left: 10px; }
-        @media (max-width: 600px) { .controls { flex-direction: column; align-items: stretch; } button, select { width: 100%; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+        .close-btn {
+            background: #ef4444;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #0f111a;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #3b82f6;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 24px;
+            border-bottom: 1px solid #2a2f3f;
+            background: #1a1f2a;
+        }
+        .modal-header h3 {
+            color: #3b82f6;
+            font-size: 1.4rem;
+        }
+        .modal-close {
+            background: #ef4444;
+            border: none;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .history-table th, .history-table td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #2a2f3f;
+        }
+        .history-table th {
+            color: #8a8f9f;
+            font-weight: 600;
+            background: #1a1f2a;
+            position: sticky;
+            top: 0;
+        }
+        .history-table tr:hover {
+            background: #1a1f2a;
+        }
+        .profit-text { color: #22c55e; font-weight: bold; }
+        .loss-text { color: #ef4444; font-weight: bold; }
+        @media (max-width: 700px) {
+            .stats-grid { grid-template-columns: repeat(2,1fr); }
+            .controls { flex-direction: column; align-items: stretch; }
+            button, select { width: 100%; }
+            .history-table th, .history-table td { padding: 8px 4px; font-size: 0.75rem; }
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.2/dist/axios.min.js"></script>
 </head>
@@ -55,7 +229,8 @@
     <div class="signal-box">
         <div class="signal-label">AI RECOMMENDATION SIGNAL</div>
         <div class="signal-value" id="finalSignalDisplay">--</div>
-        <div class="signal-label">RSI (14)</div>
+        <div class="confidence" id="confidenceDisplay">Confidence: --%</div>
+        <div class="signal-label" style="margin-top:12px;">RSI (14)</div>
         <div class="signal-value" id="rsiDisplay">--</div>
         <div class="signal-label">Current Price</div>
         <div class="signal-value" id="priceDisplay">--</div>
@@ -78,8 +253,8 @@
             <option value="1D">1 day</option>
         </select>
         <button id="startStopBtn">🤖 Start Auto Trading</button>
-        <button class="trade-btn buy" id="testBuyBtn">🔵 Test BUY</button>
-        <button class="trade-btn sell" id="testSellBtn">🔴 Test SELL</button>
+        <button class="trade-btn buy" id="testBuyBtn">🔵 Test BUY ($500)</button>
+        <button class="trade-btn sell" id="testSellBtn">🔴 Test SELL ($500)</button>
         <button id="audioToggleBtn">🔊 Audio ON</button>
         <button id="historyBtn" class="history-btn">📜 Trade History</button>
     </div>
@@ -112,6 +287,8 @@
     let lastTradeTime = 0;
     const COOLDOWN_MS = 60000;
     let audioEnabled = localStorage.getItem('audioAlertsEnabled') === 'true';
+    const TRADE_AMOUNT = 500;   // Fixed trade amount $500
+    const LEVERAGE = 5;
 
     // DOM elements
     const balanceSpan = document.getElementById('balance');
@@ -121,6 +298,7 @@
     const positionsDiv = document.getElementById('positionsList');
     const statusMsgDiv = document.getElementById('statusMsg');
     const finalSignalSpan = document.getElementById('finalSignalDisplay');
+    const confidenceSpan = document.getElementById('confidenceDisplay');
     const rsiSpan = document.getElementById('rsiDisplay');
     const priceDisplaySpan = document.getElementById('priceDisplay');
 
@@ -145,16 +323,16 @@
         }
         positionsDiv.innerHTML = positions.map(p => {
             const priceDiff = p.type === 'buy' ? (currentPrice - p.entryPrice) : (p.entryPrice - currentPrice);
-            const pnlPercent = (priceDiff / p.entryPrice) * 100;
-            const pnl = (pnlPercent / 100) * p.positionSize;
+            const pnlPercentRaw = (priceDiff / p.entryPrice) * 100;
+            const pnl = (pnlPercentRaw / 100) * p.positionSize;
             const pnlClass = pnl >= 0 ? 'profit' : 'loss';
             return `
                 <div class="position-item" style="border-left-color: ${p.type === 'buy' ? '#22c55e' : '#ef4444'}">
                     <div class="position-details">
-                        <strong>${p.type.toUpperCase()}</strong> | Entry: $${p.entryPrice.toFixed(2)} | Size: $${p.positionSize} (${p.leverage}X)
+                        <strong>${p.type.toUpperCase()}</strong> | Entry: $${p.entryPrice.toFixed(2)} | Size: $${p.positionSize} (${LEVERAGE}X)
                     </div>
                     <div class="position-pnl ${pnlClass}">
-                        P&L: $${pnl.toFixed(2)} (${pnlPercent.toFixed(2)}%)
+                        P&L: $${pnl.toFixed(2)} (${pnlPercentRaw.toFixed(2)}%)
                     </div>
                     <button class="close-btn" onclick="window.closePosition(${p.id})">Close</button>
                 </div>
@@ -168,17 +346,16 @@
     }
 
     // ==================== TRADE FUNCTIONS ====================
-    window.executeTrade = function(type, amount = 20) {
+    window.executeTrade = function(type, amount = TRADE_AMOUNT) {
         const userData = usersData[currentUser].tradingData;
         if (amount > userData.balance) { alert("Insufficient balance"); return false; }
         if (userData.positions && userData.positions.length > 0) { alert("Close existing position first"); return false; }
-        const leverage = 5;
-        const positionSize = amount * leverage;
+        const positionSize = amount * LEVERAGE;
         const position = {
             id: Date.now(),
             type: type,
             amount: amount,
-            leverage: leverage,
+            leverage: LEVERAGE,
             positionSize: positionSize,
             entryPrice: currentPrice,
             timestamp: new Date().toISOString()
@@ -189,7 +366,7 @@
         saveData();
         loadUserData();
         speakMessage(type === 'buy' ? "Right time open buy trade" : "Right time open sell trade");
-        showStatus(`Manual ${type.toUpperCase()} placed at $${currentPrice.toFixed(2)}`, 'success');
+        showStatus(`${type.toUpperCase()} trade placed: $${amount} @ $${currentPrice.toFixed(2)} (${LEVERAGE}X)`, 'success');
         return true;
     };
 
@@ -199,8 +376,8 @@
         if (idx === -1) return;
         const pos = userData.positions[idx];
         const priceDiff = pos.type === 'buy' ? (currentPrice - pos.entryPrice) : (pos.entryPrice - currentPrice);
-        const pnlPercent = (priceDiff / pos.entryPrice) * 100;
-        const pnl = (pnlPercent / 100) * pos.positionSize;
+        const pnlPercentRaw = (priceDiff / pos.entryPrice) * 100;
+        const pnl = (pnlPercentRaw / 100) * pos.positionSize;
         userData.balance += pos.amount + pnl;
         if (pnl > 0) userData.winTrades++;
         userData.totalProfit += pnl;
@@ -211,17 +388,17 @@
             entryPrice: pos.entryPrice,
             exitPrice: currentPrice,
             pnl: pnl,
-            pnlPercent: pnlPercent
+            pnlPercent: pnlPercentRaw
         });
-        if (userData.tradeHistory.length > 50) userData.tradeHistory.pop();
+        if (userData.tradeHistory.length > 100) userData.tradeHistory.pop();
         userData.positions.splice(idx, 1);
         saveData();
         loadUserData();
         speakMessage("Right time close trade");
-        showStatus(`Closed ${pos.type} | PnL: $${pnl.toFixed(2)} (${pnlPercent.toFixed(2)}%)`, pnl >= 0 ? 'success' : 'error');
+        showStatus(`Closed ${pos.type} | PnL: $${pnl.toFixed(2)} (${pnlPercentRaw.toFixed(2)}%)`, pnl >= 0 ? 'success' : 'error');
     };
 
-    // ==================== MARKET DATA (with CORS proxy fallback) ====================
+    // ==================== MARKET DATA ====================
     async function fetchCandles(symbol = "BTCUSDT", interval = "5m", limit = 50) {
         const directUrl = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
         const proxyUrl = `https://cors-anywhere.herokuapp.com/${directUrl}`;
@@ -291,15 +468,27 @@
         return { support, resistance };
     }
 
-    function getSignalFromRSIAndPrice(rsi, price, support, resistance) {
+    function computeSignalAndConfidence(rsi, price, support, resistance) {
         const nearSupport = price <= support * 1.005;
         const nearResistance = price >= resistance * 0.995;
-        if (nearSupport && rsi < 30) return "BUY";
-        if (nearResistance && rsi > 70) return "SELL";
-        return "NEUTRAL";
+        let signal = "NEUTRAL";
+        let confidence = 0;
+        if (nearSupport && rsi < 30) {
+            signal = "BUY";
+            confidence = Math.min(100, Math.round((30 - rsi) * 3.33 + 20));
+        } else if (nearResistance && rsi > 70) {
+            signal = "SELL";
+            confidence = Math.min(100, Math.round((rsi - 70) * 3.33 + 20));
+        } else if (rsi < 35 && !nearResistance) {
+            signal = "BUY (weak)";
+            confidence = Math.min(70, Math.round((35 - rsi) * 3));
+        } else if (rsi > 65 && !nearSupport) {
+            signal = "SELL (weak)";
+            confidence = Math.min(70, Math.round((rsi - 65) * 3));
+        }
+        return { signal, confidence };
     }
 
-    // Update market data and display
     async function updateMarketAndSignal() {
         const candles = await fetchCandles("BTCUSDT", selectedTF, 50);
         if (!candles || candles.length === 0) return;
@@ -308,13 +497,13 @@
         const closes = candles.map(c => c.close);
         const rsi = calculateRSI(closes, 14);
         const { support, resistance } = calculateSupportResistance(candles);
-        const signal = getSignalFromRSIAndPrice(rsi, currentPrice, support, resistance);
+        const { signal, confidence } = computeSignalAndConfidence(rsi, currentPrice, support, resistance);
         finalSignalSpan.innerText = signal;
-        finalSignalSpan.className = `signal-value ${signal.toLowerCase()}`;
+        finalSignalSpan.className = `signal-value ${signal.toLowerCase().includes('buy') ? 'buy' : signal.toLowerCase().includes('sell') ? 'sell' : 'neutral'}`;
+        confidenceSpan.innerText = `Confidence: ${confidence}%`;
         rsiSpan.innerText = rsi.toFixed(2);
-        // Also re-render positions to update P&L
         renderPositions(usersData[currentUser].tradingData.positions);
-        return { signal, rsi, price: currentPrice, support, resistance };
+        return { signal, confidence, rsi, price: currentPrice, support, resistance };
     }
 
     // ==================== AUTO TRADING ====================
@@ -327,20 +516,20 @@
         }
         const data = await updateMarketAndSignal();
         if (!data) return;
-        const { signal, rsi, price } = data;
+        const { signal, confidence, rsi, price } = data;
         const now = Date.now();
         if (now - lastTradeTime < COOLDOWN_MS) {
             showStatus(`Cooldown: ${Math.ceil((COOLDOWN_MS - (now - lastTradeTime))/1000)}s left`, 'info');
             return;
         }
         let action = null;
-        if (signal === "BUY" && rsi < 30) action = "buy";
-        else if (signal === "SELL" && rsi > 70) action = "sell";
+        if ((signal === "BUY" || signal === "BUY (weak)") && rsi < 35 && confidence >= 40) action = "buy";
+        else if ((signal === "SELL" || signal === "SELL (weak)") && rsi > 65 && confidence >= 40) action = "sell";
         if (action) {
-            const success = window.executeTrade(action, 20);
+            const success = window.executeTrade(action, TRADE_AMOUNT);
             if (success) {
                 lastTradeTime = now;
-                showStatus(`✅ Auto ${action.toUpperCase()} executed at $${price.toFixed(2)}`, 'success');
+                showStatus(`✅ Auto ${action.toUpperCase()} executed at $${price.toFixed(2)} (Conf: ${confidence}%)`, 'success');
             }
         } else {
             showStatus(`No signal: ${signal} | RSI=${rsi.toFixed(1)}`, 'info');
@@ -370,9 +559,9 @@
         let updated = false;
         for (let i=0; i<userData.positions.length; i++) {
             const pos = userData.positions[i];
-            const pnlPercent = pos.type === 'buy' ? (current - pos.entryPrice)/pos.entryPrice : (pos.entryPrice - current)/pos.entryPrice;
-            if (pnlPercent >= tpPercent || pnlPercent <= -slPercent) {
-                const pnl = pnlPercent * pos.positionSize;
+            const pnlPercentRaw = pos.type === 'buy' ? (current - pos.entryPrice)/pos.entryPrice : (pos.entryPrice - current)/pos.entryPrice;
+            if (pnlPercentRaw >= tpPercent || pnlPercentRaw <= -slPercent) {
+                const pnl = pnlPercentRaw * pos.positionSize;
                 userData.balance += pos.amount + pnl;
                 if (pnl > 0) userData.winTrades++;
                 userData.totalProfit += pnl;
@@ -383,9 +572,9 @@
                     entryPrice: pos.entryPrice,
                     exitPrice: current,
                     pnl: pnl,
-                    pnlPercent: pnlPercent * 100
+                    pnlPercent: pnlPercentRaw * 100
                 });
-                if (userData.tradeHistory.length > 50) userData.tradeHistory.pop();
+                if (userData.tradeHistory.length > 100) userData.tradeHistory.pop();
                 userData.positions.splice(i,1);
                 updated = true;
                 i--;
@@ -396,6 +585,51 @@
             saveData();
             loadUserData();
         }
+    }
+
+    // ==================== TRADE HISTORY MODAL (beautiful design) ====================
+    function showTradeHistoryModal() {
+        const history = usersData[currentUser].tradingData.tradeHistory || [];
+        if (history.length === 0) {
+            alert("No trade history yet.");
+            return;
+        }
+        const modalOverlay = document.createElement('div');
+        modalOverlay.className = 'modal-overlay';
+        let rows = '';
+        history.forEach(t => {
+            const pnlClass = t.pnl >= 0 ? 'profit-text' : 'loss-text';
+            rows += `
+                <tr>
+                    <td>${t.date}</td>
+                    <td style="text-transform:uppercase; color:${t.type === 'buy' ? '#22c55e' : '#ef4444'}">${t.type}</td>
+                    <td>$${t.entryPrice.toFixed(2)}</td>
+                    <td>$${t.exitPrice.toFixed(2)}</td>
+                    <td class="${pnlClass}">$${t.pnl.toFixed(2)} (${t.pnlPercent.toFixed(1)}%)</td>
+                </tr>
+            `;
+        });
+        modalOverlay.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>📜 Trade History</h3>
+                    <button class="modal-close">Close</button>
+                </div>
+                <div class="modal-body">
+                    <table class="history-table">
+                        <thead>
+                            <tr><th>Date & Time</th><th>Type</th><th>Entry Price</th><th>Exit Price</th><th>P&L</th></tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modalOverlay);
+        modalOverlay.querySelector('.modal-close').onclick = () => modalOverlay.remove();
+        modalOverlay.onclick = (e) => { if (e.target === modalOverlay) modalOverlay.remove(); };
     }
 
     // ==================== UI CONTROLS ====================
@@ -414,23 +648,15 @@
             showStatus("⏹️ Auto trading DISABLED", 'info');
         }
     };
-    document.getElementById('testBuyBtn').onclick = () => window.executeTrade('buy', 20);
-    document.getElementById('testSellBtn').onclick = () => window.executeTrade('sell', 20);
+    document.getElementById('testBuyBtn').onclick = () => window.executeTrade('buy', TRADE_AMOUNT);
+    document.getElementById('testSellBtn').onclick = () => window.executeTrade('sell', TRADE_AMOUNT);
     document.getElementById('timeframeSelect').onchange = (e) => { selectedTF = e.target.value; localStorage.setItem('selectedTF', selectedTF); updateMarketAndSignal(); };
     document.getElementById('audioToggleBtn').onclick = () => {
         audioEnabled = !audioEnabled;
         localStorage.setItem('audioAlertsEnabled', audioEnabled);
         document.getElementById('audioToggleBtn').innerText = audioEnabled ? "🔊 Audio ON" : "🔇 Audio OFF";
     };
-    document.getElementById('historyBtn').onclick = () => {
-        const history = usersData[currentUser].tradingData.tradeHistory || [];
-        if (history.length === 0) { alert("No trade history"); return; }
-        let txt = "Trade History:\n";
-        history.forEach(t => {
-            txt += `${t.date} | ${t.type} | Entry:$${t.entryPrice} | Exit:$${t.exitPrice} | PnL:$${t.pnl.toFixed(2)} (${t.pnlPercent.toFixed(1)}%)\n`;
-        });
-        alert(txt);
-    };
+    document.getElementById('historyBtn').onclick = showTradeHistoryModal;
 
     function speakMessage(msg) {
         if (!audioEnabled) return;
@@ -450,7 +676,7 @@
     function showStatus(msg, type = 'info') {
         statusMsgDiv.innerHTML = msg;
         statusMsgDiv.style.color = type === 'success' ? '#22c55e' : (type === 'error' ? '#ef4444' : '#f59e0b');
-        setTimeout(() => { if (statusMsgDiv.innerHTML === msg) statusMsgDiv.style.color = '#e0e0e0'; }, 3000);
+        setTimeout(() => { if (statusMsgDiv.innerHTML === msg) statusMsgDiv.style.color = '#e0e0e0'; }, 4000);
     }
 
     // ==================== INITIALIZATION ====================
@@ -461,7 +687,6 @@
     audioEnabled = localStorage.getItem('audioAlertsEnabled') === 'true';
     document.getElementById('audioToggleBtn').innerText = audioEnabled ? "🔊 Audio ON" : "🔇 Audio OFF";
 
-    // Periodically update price, close positions, and refresh P&L
     setInterval(async () => {
         await updateMarketAndSignal();
         await autoClosePositions();
