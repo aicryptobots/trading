@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Auto Trading Bot | AI Signal + Confidence | $500 Trades</title>
+    <title>Auto Trading Bot | AI Signal + Confidence Score | $500 Trades</title>
     <style>
         * {
             margin: 0;
@@ -147,7 +147,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.85);
             backdrop-filter: blur(4px);
             display: flex;
             align-items: center;
@@ -158,7 +158,7 @@
             background: #0f111a;
             border-radius: 24px;
             width: 90%;
-            max-width: 900px;
+            max-width: 950px;
             max-height: 80vh;
             overflow: hidden;
             display: flex;
@@ -287,7 +287,7 @@
     let lastTradeTime = 0;
     const COOLDOWN_MS = 60000;
     let audioEnabled = localStorage.getItem('audioAlertsEnabled') === 'true';
-    const TRADE_AMOUNT = 500;   // Fixed trade amount $500
+    const TRADE_AMOUNT = 500;
     const LEVERAGE = 5;
 
     // DOM elements
@@ -413,7 +413,6 @@
                 volume: parseFloat(k[5])
             }));
         } catch (e) {
-            console.warn("Direct Binance failed, trying proxy...");
             try {
                 let response = await axios.get(proxyUrl, { timeout: 10000 });
                 return response.data.map(k => ({
@@ -425,7 +424,7 @@
                     volume: parseFloat(k[5])
                 }));
             } catch (e2) {
-                console.error("All data sources failed, using demo data", e2);
+                // Demo data fallback
                 let demo = [];
                 let price = currentPrice || 67000;
                 for (let i=0; i<limit; i++) {
@@ -468,25 +467,51 @@
         return { support, resistance };
     }
 
+    // ========== IMPROVED SIGNAL & CONFIDENCE (always shows a percentage) ==========
     function computeSignalAndConfidence(rsi, price, support, resistance) {
         const nearSupport = price <= support * 1.005;
         const nearResistance = price >= resistance * 0.995;
         let signal = "NEUTRAL";
         let confidence = 0;
-        if (nearSupport && rsi < 30) {
+        
+        // Distance to key levels
+        const rsiDistanceToBuy = Math.max(0, 30 - rsi);      // how far below 30
+        const rsiDistanceToSell = Math.max(0, rsi - 70);     // how far above 70
+        const supportDistance = nearSupport ? Math.max(0, (support - price) / support) : 0;
+        const resistanceDistance = nearResistance ? Math.max(0, (price - resistance) / resistance) : 0;
+        
+        if (rsi < 30 && nearSupport) {
             signal = "BUY";
-            confidence = Math.min(100, Math.round((30 - rsi) * 3.33 + 20));
-        } else if (nearResistance && rsi > 70) {
+            // Base 50% + rsiDistance (max 20) + support proximity (max 30)
+            let base = 50 + Math.min(20, rsiDistanceToBuy * 2) + Math.min(30, (30 - rsi) * 1.5);
+            confidence = Math.min(99, Math.max(30, base));
+        } 
+        else if (rsi > 70 && nearResistance) {
             signal = "SELL";
-            confidence = Math.min(100, Math.round((rsi - 70) * 3.33 + 20));
-        } else if (rsi < 35 && !nearResistance) {
-            signal = "BUY (weak)";
-            confidence = Math.min(70, Math.round((35 - rsi) * 3));
-        } else if (rsi > 65 && !nearSupport) {
-            signal = "SELL (weak)";
-            confidence = Math.min(70, Math.round((rsi - 65) * 3));
+            let base = 50 + Math.min(20, rsiDistanceToSell * 2) + Math.min(30, (rsi - 70) * 1.5);
+            confidence = Math.min(99, Math.max(30, base));
         }
-        return { signal, confidence };
+        else if (rsi < 35) {
+            signal = "BUY (weak)";
+            let base = 30 + (35 - rsi) * 2;
+            confidence = Math.min(70, Math.max(20, base));
+        }
+        else if (rsi > 65) {
+            signal = "SELL (weak)";
+            let base = 30 + (rsi - 65) * 2;
+            confidence = Math.min(70, Math.max(20, base));
+        }
+        else {
+            signal = "NEUTRAL";
+            // Confidence based on distance from 50 (more extreme = higher confidence in neutrality?)
+            let distanceFrom50 = Math.abs(rsi - 50);
+            let base = Math.min(50, distanceFrom50 * 1.5);
+            confidence = Math.max(5, Math.min(50, base));
+        }
+        
+        // Ensure confidence is integer and between 0-100
+        confidence = Math.round(confidence);
+        return { signal: signal.toUpperCase(), confidence };
     }
 
     async function updateMarketAndSignal() {
@@ -498,10 +523,13 @@
         const rsi = calculateRSI(closes, 14);
         const { support, resistance } = calculateSupportResistance(candles);
         const { signal, confidence } = computeSignalAndConfidence(rsi, currentPrice, support, resistance);
-        finalSignalSpan.innerText = signal;
+        
+        // Display signal and confidence
+        finalSignalSpan.innerText = signal === "BUY (WEAK)" ? "BUY" : signal === "SELL (WEAK)" ? "SELL" : signal;
         finalSignalSpan.className = `signal-value ${signal.toLowerCase().includes('buy') ? 'buy' : signal.toLowerCase().includes('sell') ? 'sell' : 'neutral'}`;
         confidenceSpan.innerText = `Confidence: ${confidence}%`;
         rsiSpan.innerText = rsi.toFixed(2);
+        
         renderPositions(usersData[currentUser].tradingData.positions);
         return { signal, confidence, rsi, price: currentPrice, support, resistance };
     }
@@ -523,8 +551,8 @@
             return;
         }
         let action = null;
-        if ((signal === "BUY" || signal === "BUY (weak)") && rsi < 35 && confidence >= 40) action = "buy";
-        else if ((signal === "SELL" || signal === "SELL (weak)") && rsi > 65 && confidence >= 40) action = "sell";
+        if ((signal === "BUY" || signal === "BUY (WEAK)") && confidence >= 40) action = "buy";
+        else if ((signal === "SELL" || signal === "SELL (WEAK)") && confidence >= 40) action = "sell";
         if (action) {
             const success = window.executeTrade(action, TRADE_AMOUNT);
             if (success) {
@@ -587,7 +615,7 @@
         }
     }
 
-    // ==================== TRADE HISTORY MODAL (beautiful design) ====================
+    // ==================== TRADE HISTORY MODAL ====================
     function showTradeHistoryModal() {
         const history = usersData[currentUser].tradingData.tradeHistory || [];
         if (history.length === 0) {
