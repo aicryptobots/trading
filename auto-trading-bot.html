@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Auto Trading Bot | AI Signals + RSI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0c12;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        .bot-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #0f111a;
+            border-radius: 24px;
+            border: 1px solid #2a2f3f;
+            padding: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #3b82f6;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .signal-box {
+            background: #1a1f2a;
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            border: 1px solid #2a3040;
+        }
+        .signal-label {
+            font-size: 0.8rem;
+            color: #8a8f9f;
+        }
+        .signal-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .signal-value.buy { color: #22c55e; }
+        .signal-value.sell { color: #ef4444; }
+        .signal-value.neutral { color: #f59e0b; }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        button, select {
+            background: #1e2436;
+            border: 1px solid #3b82f6;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #3b82f6;
+            transform: scale(1.02);
+        }
+        .trade-btn {
+            font-weight: bold;
+        }
+        .trade-btn.buy { background: #22c55e; border-color: #22c55e; }
+        .trade-btn.sell { background: #ef4444; border-color: #ef4444; }
+        .status {
+            background: #1a1f2a;
+            padding: 10px;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            margin-top: 15px;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #2a3040;
+        }
+        .close-btn {
+            background: #ef4444;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+        }
+        .profit { color: #22c55e; }
+        .loss { color: #ef4444; }
+        .history-btn {
+            background: #3b82f6;
+            margin-left: 10px;
+        }
+        @media (max-width: 600px) {
+            .controls { flex-direction: column; align-items: stretch; }
+            button, select { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<div class="bot-container">
+    <h2>🤖 Auto Trading Bot</h2>
+    <div class="signal-box">
+        <div class="signal-label">AI RECOMMENDATION SIGNAL</div>
+        <div class="signal-value" id="finalSignalDisplay">--</div>
+        <div class="signal-label">RSI (14)</div>
+        <div class="signal-value" id="rsiDisplay">--</div>
+    </div>
+
+    <div class="controls">
+        <select id="timeframeSelect">
+            <option value="1m">1 minute</option>
+            <option value="5m" selected>5 minutes</option>
+            <option value="15m">15 minutes</option>
+            <option value="1h">1 hour</option>
+            <option value="4h">4 hours</option>
+            <option value="1D">1 day</option>
+        </select>
+        <button id="startStopBtn">🤖 Start Auto Trading</button>
+        <button class="trade-btn buy" id="testBuyBtn">🔵 Test BUY</button>
+        <button class="trade-btn sell" id="testSellBtn">🔴 Test SELL</button>
+        <button id="audioToggleBtn">🔊 Audio ON</button>
+        <button id="historyBtn" class="history-btn">📜 Trade History</button>
+    </div>
+
+    <div class="status" id="statusMsg">⏸️ Auto trading OFF</div>
+
+    <h3>💰 Trading Panel</h3>
+    <div>Balance: $<span id="balance">10000</span></div>
+    <div>Total Trades: <span id="totalTrades">0</span></div>
+    <div>Open Positions:</div>
+    <div id="positionsList">No open positions</div>
+
+    <h3>📈 Open Positions</h3>
+    <div id="openPositionsList">None</div>
+</div>
+
+<script>
+    // ==================== CONFIGURATION ====================
+    let currentUser = "demo_user";  // simple demo – no login for standalone
+    let usersData = JSON.parse(localStorage.getItem('standalone_trading_data')) || {
+        demo_user: {
+            tradingData: {
+                balance: 10000,
+                totalTrades: 0,
+                winTrades: 0,
+                totalProfit: 0,
+                positions: [],
+                tradeHistory: []
+            }
+        }
+    };
+    let currentPrice = 67000;
+    let currentLeverage = 5;
+    let selectedTF = "5m";
+    let autoEnabled = false;
+    let autoInterval = null;
+    let lastTradeTime = 0;
+    const COOLDOWN_MS = 60000;
+    let audioEnabled = localStorage.getItem('audioAlertsEnabled') === 'true';
+
+    // DOM elements
+    const balanceSpan = document.getElementById('balance');
+    const totalTradesSpan = document.getElementById('totalTrades');
+    const positionsDiv = document.getElementById('openPositionsList');
+    const statusMsgDiv = document.getElementById('statusMsg');
+    const finalSignalSpan = document.getElementById('finalSignalDisplay');
+    const rsiSpan = document.getElementById('rsiDisplay');
+
+    // Helper: save data
+    function saveData() {
+        localStorage.setItem('standalone_trading_data', JSON.stringify(usersData));
+    }
+
+    // Load user data
+    function loadUserData() {
+        const data = usersData[currentUser].tradingData;
+        balanceSpan.innerText = data.balance.toFixed(2);
+        totalTradesSpan.innerText = data.totalTrades;
+        renderPositions(data.positions);
+    }
+
+    function renderPositions(positions) {
+        if (!positions || positions.length === 0) {
+            positionsDiv.innerHTML = "None";
+            return;
+        }
+        positionsDiv.innerHTML = positions.map(p => `
+            <div style="border-left: 3px solid ${p.type === 'buy' ? '#22c55e' : '#ef4444'}; padding: 5px; margin: 5px 0;">
+                ${p.type.toUpperCase()} | Amount: $${p.amount} | Leverage: ${p.leverage}X | Entry: $${p.entryPrice.toFixed(2)}
+                <button class="close-btn" onclick="closePosition(${p.id})">Close</button>
+            </div>
+        `).join('');
+    }
+
+    // Manual trade
+    window.executeTrade = function(type) {
+        const userData = usersData[currentUser].tradingData;
+        const amount = 20; // fixed demo amount, you can change to input
+        if (amount > userData.balance) { alert("Insufficient balance"); return; }
+        if (userData.positions && userData.positions.length > 0) { alert("Close existing position first"); return; }
+        const position = {
+            id: Date.now(),
+            type: type,
+            amount: amount,
+            leverage: currentLeverage,
+            positionSize: amount * currentLeverage,
+            entryPrice: currentPrice,
+            timestamp: new Date().toISOString()
+        };
+        userData.positions.push(position);
+        userData.balance -= amount;
+        userData.totalTrades++;
+        saveData();
+        loadUserData();
+        speakMessage(type === 'buy' ? "Right time open buy trade" : "Right time open sell trade");
+        showStatus(`Manual ${type.toUpperCase()} placed at $${currentPrice.toFixed(2)}`, 'success');
+    };
+
+    window.closePosition = function(id) {
+        const userData = usersData[currentUser].tradingData;
+        const idx = userData.positions.findIndex(p => p.id == id);
+        if (idx === -1) return;
+        const pos = userData.positions[idx];
+        const priceDiff = pos.type === 'buy' ? (currentPrice - pos.entryPrice) : (pos.entryPrice - currentPrice);
+        const pnlPercent = priceDiff / pos.entryPrice;
+        const pnl = pnlPercent * pos.positionSize;
+        userData.balance += pos.amount + pnl;
+        userData.totalTrades++;
+        if (pnl > 0) userData.winTrades++;
+        userData.totalProfit += pnl;
+        // save to history
+        if (!userData.tradeHistory) userData.tradeHistory = [];
+        userData.tradeHistory.unshift({
+            date: new Date().toLocaleString(),
+            type: pos.type,
+            entryPrice: pos.entryPrice,
+            exitPrice: currentPrice,
+            pnl: pnl,
+            pnlPercent: pnlPercent * 100
+        });
+        if (userData.tradeHistory.length > 50) userData.tradeHistory.pop();
+        userData.positions.splice(idx, 1);
+        saveData();
+        loadUserData();
+        speakMessage("Right time close trade");
+        showStatus(`Closed ${pos.type} | PnL: $${pnl.toFixed(2)}`, pnl >= 0 ? 'success' : 'error');
+    };
+
+    // ==================== MARKET DATA & INDICATORS ====================
+    async function fetchCandles(symbol = "BTCUSDT", interval = "5m", limit = 50) {
+        const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+        try {
+            const res = await axios.get(url);
+            return res.data.map(k => ({
+                time: k[0],
+                open: parseFloat(k[1]),
+                high: parseFloat(k[2]),
+                low: parseFloat(k[3]),
+                close: parseFloat(k[4]),
+                volume: parseFloat(k[5])
+            }));
+        } catch(e) {
+            console.error("Binance fetch error", e);
+            return null;
+        }
+    }
+
+    function calculateRSI(closes, period = 14) {
+        if (closes.length < period + 1) return 50;
+        let gains = 0, losses = 0;
+        for (let i = closes.length - period; i < closes.length; i++) {
+            const diff = closes[i] - closes[i-1];
+            if (diff >= 0) gains += diff;
+            else losses -= diff;
+        }
+        const avgGain = gains / period;
+        const avgLoss = losses / period;
+        if (avgLoss === 0) return 100;
+        const rs = avgGain / avgLoss;
+        return 100 - (100 / (1 + rs));
+    }
+
+    function calculateSupportResistance(candles) {
+        const highs = candles.map(c => c.high);
+        const lows = candles.map(c => c.low);
+        const support = Math.min(...lows.slice(-20));
+        const resistance = Math.max(...highs.slice(-20));
+        return { support, resistance };
+    }
+
+    function getSignalFromRSIAndPrice(rsi, price, support, resistance) {
+        // Simple rule: if price near support and rsi<30 -> BUY; near resistance and rsi>70 -> SELL
+        const nearSupport = price <= support * 1.005;
+        const nearResistance = price >= resistance * 0.995;
+        if (nearSupport && rsi < 30) return "BUY";
+        if (nearResistance && rsi > 70) return "SELL";
+        return "NEUTRAL";
+    }
+
+    // Main update loop
+    async function updateMarketAndSignal() {
+        const candles = await fetchCandles("BTCUSDT", selectedTF, 50);
+        if (!candles || candles.length === 0) return;
+        currentPrice = candles[candles.length-1].close;
+        const closes = candles.map(c => c.close);
+        const rsi = calculateRSI(closes, 14);
+        const { support, resistance } = calculateSupportResistance(candles);
+        const signal = getSignalFromRSIAndPrice(rsi, currentPrice, support, resistance);
+        finalSignalSpan.innerText = signal;
+        finalSignalSpan.className = `signal-value ${signal.toLowerCase()}`;
+        rsiSpan.innerText = rsi.toFixed(2);
+        return { signal, rsi, price: currentPrice, support, resistance };
+    }
+
+    // Auto trading logic
+    async function checkAndTrade() {
+        if (!autoEnabled) return;
+        const userData = usersData[currentUser].tradingData;
+        if (userData.positions && userData.positions.length > 0) {
+            showStatus("📌 Open position exists - waiting", 'info');
+            return;
+        }
+        const data = await updateMarketAndSignal();
+        if (!data) return;
+        const { signal, rsi, price } = data;
+        const now = Date.now();
+        if (now - lastTradeTime < COOLDOWN_MS) {
+            showStatus(`Cooldown: ${Math.ceil((COOLDOWN_MS - (now - lastTradeTime))/1000)}s left`, 'info');
+            return;
+        }
+        let action = null;
+        if (signal === "BUY" && rsi < 30) action = "buy";
+        else if (signal === "SELL" && rsi > 70) action = "sell";
+        if (action) {
+            executeTrade(action);
+            lastTradeTime = now;
+            showStatus(`✅ Auto ${action.toUpperCase()} executed at $${price.toFixed(2)}`, 'success');
+        } else {
+            showStatus(`No signal: ${signal} | RSI=${rsi.toFixed(1)}`, 'info');
+        }
+    }
+
+    // TP/SL based on timeframe
+    function getTPSLByTimeframe(tf) {
+        switch(tf) {
+            case '1m': return { tpPercent: 0.0025, slPercent: 0.0012 };
+            case '5m': return { tpPercent: 0.006, slPercent: 0.003 };
+            case '15m': return { tpPercent: 0.009, slPercent: 0.0045 };
+            case '1h': return { tpPercent: 0.0135, slPercent: 0.00675 };
+            case '4h': return { tpPercent: 0.02, slPercent: 0.01 };
+            case '1D': return { tpPercent: 0.035, slPercent: 0.0175 };
+            default: return { tpPercent: 0.006, slPercent: 0.003 };
+        }
+    }
+
+    async function autoClosePositions() {
+        const userData = usersData[currentUser].tradingData;
+        if (!userData.positions.length) return;
+        const candles = await fetchCandles("BTCUSDT", selectedTF, 1);
+        if (!candles) return;
+        const current = candles[0].close;
+        const { tpPercent, slPercent } = getTPSLByTimeframe(selectedTF);
+        let updated = false;
+        for (let i=0; i<userData.positions.length; i++) {
+            const pos = userData.positions[i];
+            const pnlPercent = pos.type === 'buy' ? (current - pos.entryPrice)/pos.entryPrice : (pos.entryPrice - current)/pos.entryPrice;
+            if (pnlPercent >= tpPercent || pnlPercent <= -slPercent) {
+                const pnl = pnlPercent * pos.positionSize;
+                userData.balance += pos.amount + pnl;
+                userData.totalTrades++;
+                if (pnl > 0) userData.winTrades++;
+                userData.totalProfit += pnl;
+                if (!userData.tradeHistory) userData.tradeHistory = [];
+                userData.tradeHistory.unshift({
+                    date: new Date().toLocaleString(),
+                    type: pos.type,
+                    entryPrice: pos.entryPrice,
+                    exitPrice: current,
+                    pnl: pnl,
+                    pnlPercent: pnlPercent * 100
+                });
+                if (userData.tradeHistory.length > 50) userData.tradeHistory.pop();
+                userData.positions.splice(i,1);
+                updated = true;
+                i--;
+                speakMessage("Right time close trade");
+            }
+        }
+        if (updated) {
+            saveData();
+            loadUserData();
+        }
+    }
+
+    // Background loop for auto close and price update
+    setInterval(async () => {
+        await updateMarketAndSignal();
+        await autoClosePositions();
+    }, 10000);
+    if (autoEnabled) setInterval(checkAndTrade, 10000);
+
+    // UI Controls
+    document.getElementById('startStopBtn').onclick = () => {
+        autoEnabled = !autoEnabled;
+        const btn = document.getElementById('startStopBtn');
+        btn.innerText = autoEnabled ? "⏸️ Stop Auto Trading" : "🤖 Start Auto Trading";
+        if (autoEnabled) {
+            if (autoInterval) clearInterval(autoInterval);
+            autoInterval = setInterval(checkAndTrade, 10000);
+            checkAndTrade();
+            showStatus("✅ Auto trading ENABLED", 'success');
+        } else {
+            if (autoInterval) clearInterval(autoInterval);
+            autoInterval = null;
+            showStatus("⏹️ Auto trading DISABLED", 'info');
+        }
+    };
+    document.getElementById('testBuyBtn').onclick = () => executeTrade('buy');
+    document.getElementById('testSellBtn').onclick = () => executeTrade('sell');
+    document.getElementById('timeframeSelect').onchange = (e) => { selectedTF = e.target.value; localStorage.setItem('selectedTF', selectedTF); };
+    document.getElementById('audioToggleBtn').onclick = () => {
+        audioEnabled = !audioEnabled;
+        localStorage.setItem('audioAlertsEnabled', audioEnabled);
+        document.getElementById('audioToggleBtn').innerText = audioEnabled ? "🔊 Audio ON" : "🔇 Audio OFF";
+    };
+    document.getElementById('historyBtn').onclick = () => {
+        const history = usersData[currentUser].tradingData.tradeHistory || [];
+        if (history.length === 0) { alert("No trade history"); return; }
+        let txt = "Trade History:\n";
+        history.forEach(t => {
+            txt += `${t.date} | ${t.type} | Entry:$${t.entryPrice} | Exit:$${t.exitPrice} | PnL:$${t.pnl.toFixed(2)} (${t.pnlPercent.toFixed(1)}%)\n`;
+        });
+        alert(txt);
+    };
+
+    function speakMessage(msg) {
+        if (!audioEnabled) return;
+        let count = 0;
+        function speak() {
+            if (!audioEnabled) return;
+            const utterance = new SpeechSynthesisUtterance(msg);
+            utterance.rate = 0.7;
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+            count++;
+            if (count < 5) setTimeout(speak, 1800);
+        }
+        speak();
+    }
+
+    function showStatus(msg, type = 'info') {
+        statusMsgDiv.innerHTML = msg;
+        statusMsgDiv.style.color = type === 'success' ? '#22c55e' : (type === 'error' ? '#ef4444' : '#f59e0b');
+        setTimeout(() => { if (statusMsgDiv.innerHTML === msg) statusMsgDiv.style.color = '#e0e0e0'; }, 3000);
+    }
+
+    // Initial load
+    loadUserData();
+    updateMarketAndSignal();
+    const savedTF = localStorage.getItem('selectedTF');
+    if (savedTF) { selectedTF = savedTF; document.getElementById('timeframeSelect').value = selectedTF; }
+    audioEnabled = localStorage.getItem('audioAlertsEnabled') === 'true';
+    document.getElementById('audioToggleBtn').innerText = audioEnabled ? "🔊 Audio ON" : "🔇 Audio OFF";
+    setInterval(updateMarketAndSignal, 10000);
+</script>
+</body>
+</html>
