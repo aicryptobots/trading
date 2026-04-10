@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Auto Trading Bot | AI Signals + RSI</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #0a0c12;
@@ -25,107 +21,40 @@
             padding: 20px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.4);
         }
-        h2 {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            color: #3b82f6;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .signal-box {
-            background: #1a1f2a;
-            border-radius: 16px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-            border: 1px solid #2a3040;
-        }
-        .signal-label {
-            font-size: 0.8rem;
-            color: #8a8f9f;
-        }
-        .signal-value {
-            font-size: 2rem;
-            font-weight: bold;
-        }
+        h2 { font-size: 1.5rem; margin-bottom: 10px; color: #3b82f6; display: flex; align-items: center; gap: 10px; }
+        .signal-box { background: #1a1f2a; border-radius: 16px; padding: 15px; margin-bottom: 20px; text-align: center; border: 1px solid #2a3040; }
+        .signal-label { font-size: 0.8rem; color: #8a8f9f; }
+        .signal-value { font-size: 2rem; font-weight: bold; }
         .signal-value.buy { color: #22c55e; }
         .signal-value.sell { color: #ef4444; }
         .signal-value.neutral { color: #f59e0b; }
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
-            align-items: center;
-            justify-content: space-between;
-        }
-        button, select {
-            background: #1e2436;
-            border: 1px solid #3b82f6;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-        }
-        button:hover {
-            background: #3b82f6;
-            transform: scale(1.02);
-        }
-        .trade-btn {
-            font-weight: bold;
-        }
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: center; justify-content: space-between; }
+        button, select { background: #1e2436; border: 1px solid #3b82f6; color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+        button:hover { background: #3b82f6; transform: scale(1.02); }
         .trade-btn.buy { background: #22c55e; border-color: #22c55e; }
         .trade-btn.sell { background: #ef4444; border-color: #ef4444; }
-        .status {
-            background: #1a1f2a;
-            padding: 10px;
-            border-radius: 12px;
-            font-family: monospace;
-            font-size: 0.85rem;
-            margin-top: 15px;
-            text-align: center;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #2a3040;
-        }
-        .close-btn {
-            background: #ef4444;
-            border: none;
-            padding: 4px 8px;
-            border-radius: 4px;
-            color: white;
-            cursor: pointer;
-        }
+        .status { background: #1a1f2a; padding: 10px; border-radius: 12px; font-family: monospace; font-size: 0.85rem; margin-top: 15px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #2a3040; }
+        .close-btn { background: #ef4444; border: none; padding: 4px 8px; border-radius: 4px; color: white; cursor: pointer; }
         .profit { color: #22c55e; }
         .loss { color: #ef4444; }
-        .history-btn {
-            background: #3b82f6;
-            margin-left: 10px;
-        }
-        @media (max-width: 600px) {
-            .controls { flex-direction: column; align-items: stretch; }
-            button, select { width: 100%; }
-        }
+        .history-btn { background: #3b82f6; margin-left: 10px; }
+        @media (max-width: 600px) { .controls { flex-direction: column; align-items: stretch; } button, select { width: 100%; } }
     </style>
+    <!-- Load axios from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.2/dist/axios.min.js"></script>
 </head>
 <body>
 <div class="bot-container">
-    <h2>🤖 Auto Trading Bot</h2>
+    <h2>🤖 Auto Trading Bot (Standalone)</h2>
     <div class="signal-box">
         <div class="signal-label">AI RECOMMENDATION SIGNAL</div>
         <div class="signal-value" id="finalSignalDisplay">--</div>
         <div class="signal-label">RSI (14)</div>
         <div class="signal-value" id="rsiDisplay">--</div>
+        <div class="signal-label">Current Price</div>
+        <div class="signal-value" id="priceDisplay">--</div>
     </div>
 
     <div class="controls">
@@ -151,14 +80,11 @@
     <div>Total Trades: <span id="totalTrades">0</span></div>
     <div>Open Positions:</div>
     <div id="positionsList">No open positions</div>
-
-    <h3>📈 Open Positions</h3>
-    <div id="openPositionsList">None</div>
 </div>
 
 <script>
-    // ==================== CONFIGURATION ====================
-    let currentUser = "demo_user";  // simple demo – no login for standalone
+    // ==================== DATA & STATE ====================
+    let currentUser = "demo_user";
     let usersData = JSON.parse(localStorage.getItem('standalone_trading_data')) || {
         demo_user: {
             tradingData: {
@@ -172,7 +98,6 @@
         }
     };
     let currentPrice = 67000;
-    let currentLeverage = 5;
     let selectedTF = "5m";
     let autoEnabled = false;
     let autoInterval = null;
@@ -183,17 +108,16 @@
     // DOM elements
     const balanceSpan = document.getElementById('balance');
     const totalTradesSpan = document.getElementById('totalTrades');
-    const positionsDiv = document.getElementById('openPositionsList');
+    const positionsDiv = document.getElementById('positionsList');
     const statusMsgDiv = document.getElementById('statusMsg');
     const finalSignalSpan = document.getElementById('finalSignalDisplay');
     const rsiSpan = document.getElementById('rsiDisplay');
+    const priceDisplaySpan = document.getElementById('priceDisplay');
 
-    // Helper: save data
     function saveData() {
         localStorage.setItem('standalone_trading_data', JSON.stringify(usersData));
     }
 
-    // Load user data
     function loadUserData() {
         const data = usersData[currentUser].tradingData;
         balanceSpan.innerText = data.balance.toFixed(2);
@@ -209,23 +133,22 @@
         positionsDiv.innerHTML = positions.map(p => `
             <div style="border-left: 3px solid ${p.type === 'buy' ? '#22c55e' : '#ef4444'}; padding: 5px; margin: 5px 0;">
                 ${p.type.toUpperCase()} | Amount: $${p.amount} | Leverage: ${p.leverage}X | Entry: $${p.entryPrice.toFixed(2)}
-                <button class="close-btn" onclick="closePosition(${p.id})">Close</button>
+                <button class="close-btn" onclick="window.closePosition(${p.id})">Close</button>
             </div>
         `).join('');
     }
 
-    // Manual trade
-    window.executeTrade = function(type) {
+    // ==================== TRADE FUNCTIONS ====================
+    window.executeTrade = function(type, amount = 20) {
         const userData = usersData[currentUser].tradingData;
-        const amount = 20; // fixed demo amount, you can change to input
-        if (amount > userData.balance) { alert("Insufficient balance"); return; }
-        if (userData.positions && userData.positions.length > 0) { alert("Close existing position first"); return; }
+        if (amount > userData.balance) { alert("Insufficient balance"); return false; }
+        if (userData.positions && userData.positions.length > 0) { alert("Close existing position first"); return false; }
         const position = {
             id: Date.now(),
             type: type,
             amount: amount,
-            leverage: currentLeverage,
-            positionSize: amount * currentLeverage,
+            leverage: 5,
+            positionSize: amount * 5,
             entryPrice: currentPrice,
             timestamp: new Date().toISOString()
         };
@@ -236,6 +159,7 @@
         loadUserData();
         speakMessage(type === 'buy' ? "Right time open buy trade" : "Right time open sell trade");
         showStatus(`Manual ${type.toUpperCase()} placed at $${currentPrice.toFixed(2)}`, 'success');
+        return true;
     };
 
     window.closePosition = function(id) {
@@ -250,7 +174,6 @@
         userData.totalTrades++;
         if (pnl > 0) userData.winTrades++;
         userData.totalProfit += pnl;
-        // save to history
         if (!userData.tradeHistory) userData.tradeHistory = [];
         userData.tradeHistory.unshift({
             date: new Date().toLocaleString(),
@@ -268,12 +191,14 @@
         showStatus(`Closed ${pos.type} | PnL: $${pnl.toFixed(2)}`, pnl >= 0 ? 'success' : 'error');
     };
 
-    // ==================== MARKET DATA & INDICATORS ====================
+    // ==================== MARKET DATA (with CORS proxy fallback) ====================
     async function fetchCandles(symbol = "BTCUSDT", interval = "5m", limit = 50) {
-        const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+        // Use direct Binance API (some browsers allow CORS, if not use proxy)
+        const directUrl = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+        const proxyUrl = `https://cors-anywhere.herokuapp.com/${directUrl}`;
         try {
-            const res = await axios.get(url);
-            return res.data.map(k => ({
+            let response = await axios.get(directUrl, { timeout: 8000 });
+            return response.data.map(k => ({
                 time: k[0],
                 open: parseFloat(k[1]),
                 high: parseFloat(k[2]),
@@ -281,9 +206,37 @@
                 close: parseFloat(k[4]),
                 volume: parseFloat(k[5])
             }));
-        } catch(e) {
-            console.error("Binance fetch error", e);
-            return null;
+        } catch (e) {
+            console.warn("Direct Binance failed, trying proxy...");
+            try {
+                let response = await axios.get(proxyUrl, { timeout: 10000 });
+                return response.data.map(k => ({
+                    time: k[0],
+                    open: parseFloat(k[1]),
+                    high: parseFloat(k[2]),
+                    low: parseFloat(k[3]),
+                    close: parseFloat(k[4]),
+                    volume: parseFloat(k[5])
+                }));
+            } catch (e2) {
+                console.error("All data sources failed, using demo data", e2);
+                // Generate demo candles (simulate price movement)
+                let demo = [];
+                let price = 67000;
+                for (let i=0; i<limit; i++) {
+                    let change = (Math.random() - 0.5) * price * 0.005;
+                    price += change;
+                    demo.push({
+                        time: Date.now() - (limit-i)*300000,
+                        open: price - price*0.001,
+                        high: price + price*0.002,
+                        low: price - price*0.002,
+                        close: price,
+                        volume: Math.random() * 1000
+                    });
+                }
+                return demo;
+            }
         }
     }
 
@@ -311,7 +264,6 @@
     }
 
     function getSignalFromRSIAndPrice(rsi, price, support, resistance) {
-        // Simple rule: if price near support and rsi<30 -> BUY; near resistance and rsi>70 -> SELL
         const nearSupport = price <= support * 1.005;
         const nearResistance = price >= resistance * 0.995;
         if (nearSupport && rsi < 30) return "BUY";
@@ -319,11 +271,12 @@
         return "NEUTRAL";
     }
 
-    // Main update loop
+    // Update market data and display
     async function updateMarketAndSignal() {
         const candles = await fetchCandles("BTCUSDT", selectedTF, 50);
         if (!candles || candles.length === 0) return;
         currentPrice = candles[candles.length-1].close;
+        priceDisplaySpan.innerText = `$${currentPrice.toFixed(2)}`;
         const closes = candles.map(c => c.close);
         const rsi = calculateRSI(closes, 14);
         const { support, resistance } = calculateSupportResistance(candles);
@@ -334,7 +287,7 @@
         return { signal, rsi, price: currentPrice, support, resistance };
     }
 
-    // Auto trading logic
+    // ==================== AUTO TRADING ====================
     async function checkAndTrade() {
         if (!autoEnabled) return;
         const userData = usersData[currentUser].tradingData;
@@ -354,15 +307,17 @@
         if (signal === "BUY" && rsi < 30) action = "buy";
         else if (signal === "SELL" && rsi > 70) action = "sell";
         if (action) {
-            executeTrade(action);
-            lastTradeTime = now;
-            showStatus(`✅ Auto ${action.toUpperCase()} executed at $${price.toFixed(2)}`, 'success');
+            const success = window.executeTrade(action, 20);
+            if (success) {
+                lastTradeTime = now;
+                showStatus(`✅ Auto ${action.toUpperCase()} executed at $${price.toFixed(2)}`, 'success');
+            }
         } else {
             showStatus(`No signal: ${signal} | RSI=${rsi.toFixed(1)}`, 'info');
         }
     }
 
-    // TP/SL based on timeframe
+    // ==================== TP/SL AUTO CLOSE ====================
     function getTPSLByTimeframe(tf) {
         switch(tf) {
             case '1m': return { tpPercent: 0.0025, slPercent: 0.0012 };
@@ -414,14 +369,7 @@
         }
     }
 
-    // Background loop for auto close and price update
-    setInterval(async () => {
-        await updateMarketAndSignal();
-        await autoClosePositions();
-    }, 10000);
-    if (autoEnabled) setInterval(checkAndTrade, 10000);
-
-    // UI Controls
+    // ==================== UI CONTROLS ====================
     document.getElementById('startStopBtn').onclick = () => {
         autoEnabled = !autoEnabled;
         const btn = document.getElementById('startStopBtn');
@@ -437,9 +385,9 @@
             showStatus("⏹️ Auto trading DISABLED", 'info');
         }
     };
-    document.getElementById('testBuyBtn').onclick = () => executeTrade('buy');
-    document.getElementById('testSellBtn').onclick = () => executeTrade('sell');
-    document.getElementById('timeframeSelect').onchange = (e) => { selectedTF = e.target.value; localStorage.setItem('selectedTF', selectedTF); };
+    document.getElementById('testBuyBtn').onclick = () => window.executeTrade('buy', 20);
+    document.getElementById('testSellBtn').onclick = () => window.executeTrade('sell', 20);
+    document.getElementById('timeframeSelect').onchange = (e) => { selectedTF = e.target.value; localStorage.setItem('selectedTF', selectedTF); updateMarketAndSignal(); };
     document.getElementById('audioToggleBtn').onclick = () => {
         audioEnabled = !audioEnabled;
         localStorage.setItem('audioAlertsEnabled', audioEnabled);
@@ -476,14 +424,19 @@
         setTimeout(() => { if (statusMsgDiv.innerHTML === msg) statusMsgDiv.style.color = '#e0e0e0'; }, 3000);
     }
 
-    // Initial load
+    // ==================== INITIALIZATION ====================
     loadUserData();
     updateMarketAndSignal();
     const savedTF = localStorage.getItem('selectedTF');
     if (savedTF) { selectedTF = savedTF; document.getElementById('timeframeSelect').value = selectedTF; }
     audioEnabled = localStorage.getItem('audioAlertsEnabled') === 'true';
     document.getElementById('audioToggleBtn').innerText = audioEnabled ? "🔊 Audio ON" : "🔇 Audio OFF";
-    setInterval(updateMarketAndSignal, 10000);
+
+    // Periodically update price and close positions (every 10 sec)
+    setInterval(async () => {
+        await updateMarketAndSignal();
+        await autoClosePositions();
+    }, 10000);
 </script>
 </body>
 </html>
