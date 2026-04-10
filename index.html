@@ -6161,27 +6161,7 @@
             updateMarginInfo();
             document.getElementById('alertToggle').classList.add('active');
         };
-// Save ONLY the Recommendation Box signal to localStorage (unique key)
-setInterval(() => {
-    const signalEl = document.getElementById('finalSignal');
-    const confidenceEl = document.getElementById('finalConfidence');
-    const rsiEl = document.getElementById('rsiValue');
-    const priceEl = document.getElementById('currentPriceLarge');
-    
-    if (signalEl && confidenceEl && rsiEl) {
-        let confidence = parseFloat(confidenceEl.innerText);
-        if (isNaN(confidence)) confidence = parseFloat(confidenceEl.innerText.replace('%', ''));
-        const data = {
-            signal: signalEl.innerText.trim(),
-            confidence: confidence || 0,
-            rsi: parseFloat(rsiEl.innerText) || 50,
-            price: priceEl ? parseFloat(priceEl.innerText.replace('$', '').replace(',', '')) : 0,
-            time: Date.now()
-        };
-        localStorage.setItem('REC_BOX_ONLY', JSON.stringify(data));
-        console.log('✅ Recommendation Box data saved:', data);
-    }
-}, 1000);
+
     </script>
     
 </body>
