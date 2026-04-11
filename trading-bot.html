@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Auto Trading Bot | Persistent Auto Trading</title>
+    <title>Auto Trading Bot | Offline Stable Price</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -21,14 +21,7 @@
             padding: 24px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.5);
         }
-        h2 {
-            font-size: 1.6rem;
-            margin-bottom: 16px;
-            color: #3b82f6;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        h2 { font-size: 1.6rem; margin-bottom: 16px; color: #3b82f6; display: flex; align-items: center; gap: 12px; }
         .signal-box {
             background: #1a1f2a;
             border-radius: 20px;
@@ -37,23 +30,12 @@
             text-align: center;
             border: 1px solid #2a3040;
         }
-        .signal-label {
-            font-size: 0.85rem;
-            color: #8a8f9f;
-            letter-spacing: 1px;
-        }
-        .signal-value {
-            font-size: 2.2rem;
-            font-weight: bold;
-        }
+        .signal-label { font-size: 0.85rem; color: #8a8f9f; letter-spacing: 1px; }
+        .signal-value { font-size: 2.2rem; font-weight: bold; }
         .signal-value.buy { color: #22c55e; }
         .signal-value.sell { color: #ef4444; }
         .signal-value.neutral { color: #f59e0b; }
-        .confidence {
-            font-size: 1rem;
-            margin-top: 8px;
-            color: #94a3b8;
-        }
+        .confidence { font-size: 1rem; margin-top: 8px; color: #94a3b8; }
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -67,16 +49,8 @@
             text-align: center;
             transition: 0.2s;
         }
-        .stat-label {
-            font-size: 0.75rem;
-            color: #8a8f9f;
-            text-transform: uppercase;
-        }
-        .stat-value {
-            font-size: 1.3rem;
-            font-weight: bold;
-            margin-top: 6px;
-        }
+        .stat-label { font-size: 0.75rem; color: #8a8f9f; text-transform: uppercase; }
+        .stat-value { font-size: 1.3rem; font-weight: bold; margin-top: 6px; }
         .controls {
             display: flex;
             flex-wrap: wrap;
@@ -96,10 +70,7 @@
             transition: all 0.2s;
             font-weight: 500;
         }
-        button:hover {
-            background: #3b82f6;
-            transform: translateY(-1px);
-        }
+        button:hover { background: #3b82f6; transform: translateY(-1px); }
         .trade-btn.buy { background: #22c55e; border-color: #22c55e; }
         .trade-btn.sell { background: #ef4444; border-color: #ef4444; }
         .status {
@@ -169,10 +140,7 @@
             border-bottom: 1px solid #2a2f3f;
             background: #1a1f2a;
         }
-        .modal-header h3 {
-            color: #3b82f6;
-            font-size: 1.4rem;
-        }
+        .modal-header h3 { color: #3b82f6; font-size: 1.4rem; }
         .modal-close {
             background: #ef4444;
             border: none;
@@ -182,11 +150,7 @@
             cursor: pointer;
             font-weight: bold;
         }
-        .modal-body {
-            padding: 20px;
-            overflow-y: auto;
-            flex: 1;
-        }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
         .history-table {
             width: 100%;
             border-collapse: collapse;
@@ -204,9 +168,7 @@
             position: sticky;
             top: 0;
         }
-        .history-table tr:hover {
-            background: #1a1f2a;
-        }
+        .history-table tr:hover { background: #1a1f2a; }
         .profit-text { color: #22c55e; font-weight: bold; }
         .loss-text { color: #ef4444; font-weight: bold; }
         @media (max-width: 700px) {
@@ -220,7 +182,7 @@
 </head>
 <body>
 <div class="bot-container">
-    <h2>🤖 Auto Trading Bot</h2>
+    <h2>🤖 Auto Trading Bot (Offline Stable)</h2>
     <div class="signal-box">
         <div class="signal-label">AI RECOMMENDATION SIGNAL</div>
         <div class="signal-value" id="finalSignalDisplay">--</div>
@@ -284,6 +246,11 @@
     let audioEnabled = localStorage.getItem('audioAlertsEnabled') === 'true';
     const TRADE_AMOUNT = 500;
     const LEVERAGE = 5;
+    
+    // Offline handling
+    let lastSuccessfulCandles = null;   // store last successful data
+    let isOnline = true;
+    let offlineStatusMsg = "";
 
     // DOM elements
     const balanceSpan = document.getElementById('balance');
@@ -393,13 +360,15 @@
         showStatus(`Closed ${pos.type} | PnL: $${pnl.toFixed(2)} (${pnlPercentRaw.toFixed(2)}%)`, pnl >= 0 ? 'success' : 'error');
     };
 
-    // ==================== MARKET DATA ====================
+    // ==================== MARKET DATA (with offline caching) ====================
     async function fetchCandles(symbol = "BTCUSDT", interval = "5m", limit = 50) {
         const directUrl = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
         const proxyUrl = `https://cors-anywhere.herokuapp.com/${directUrl}`;
+        let success = false;
+        let candles = null;
         try {
             let response = await axios.get(directUrl, { timeout: 8000 });
-            return response.data.map(k => ({
+            candles = response.data.map(k => ({
                 time: k[0],
                 open: parseFloat(k[1]),
                 high: parseFloat(k[2]),
@@ -407,10 +376,11 @@
                 close: parseFloat(k[4]),
                 volume: parseFloat(k[5])
             }));
+            success = true;
         } catch (e) {
             try {
                 let response = await axios.get(proxyUrl, { timeout: 10000 });
-                return response.data.map(k => ({
+                candles = response.data.map(k => ({
                     time: k[0],
                     open: parseFloat(k[1]),
                     high: parseFloat(k[2]),
@@ -418,24 +388,38 @@
                     close: parseFloat(k[4]),
                     volume: parseFloat(k[5])
                 }));
+                success = true;
             } catch (e2) {
-                let demo = [];
-                let price = currentPrice || 67000;
-                for (let i=0; i<limit; i++) {
-                    let change = (Math.random() - 0.5) * price * 0.005;
-                    price += change;
-                    demo.push({
-                        time: Date.now() - (limit-i)*300000,
-                        open: price - price*0.001,
-                        high: price + price*0.002,
-                        low: price - price*0.002,
-                        close: price,
-                        volume: Math.random() * 1000
-                    });
-                }
-                return demo;
+                console.warn("Both direct and proxy failed, using cached data if available");
             }
         }
+        if (success && candles && candles.length > 0) {
+            lastSuccessfulCandles = candles;
+            isOnline = true;
+            offlineStatusMsg = "";
+        } else {
+            isOnline = false;
+            offlineStatusMsg = "📡 Offline mode - using cached price";
+            if (lastSuccessfulCandles) {
+                candles = lastSuccessfulCandles;
+            } else {
+                // very first time, create a simple static candle set
+                let price = currentPrice || 67000;
+                candles = [];
+                for (let i=0; i<limit; i++) {
+                    candles.push({
+                        time: Date.now() - (limit-i)*300000,
+                        open: price,
+                        high: price,
+                        low: price,
+                        close: price,
+                        volume: 0
+                    });
+                }
+                lastSuccessfulCandles = candles;
+            }
+        }
+        return candles;
     }
 
     function calculateRSI(closes, period = 14) {
@@ -497,6 +481,7 @@
     async function updateMarketAndSignal() {
         const candles = await fetchCandles("BTCUSDT", selectedTF, 50);
         if (!candles || candles.length === 0) return;
+        // Only update price if we have new candles (if offline, lastSuccessfulCandles gives same price)
         currentPrice = candles[candles.length-1].close;
         priceDisplaySpan.innerText = `$${currentPrice.toFixed(2)}`;
         const closes = candles.map(c => c.close);
@@ -508,6 +493,10 @@
         confidenceSpan.innerText = `Confidence: ${confidence}%`;
         rsiSpan.innerText = rsi.toFixed(2);
         renderPositions(usersData[currentUser].tradingData.positions);
+        // Show offline message if needed
+        if (!isOnline) {
+            showStatus(offlineStatusMsg, 'info');
+        }
         return { signal, confidence, rsi, price: currentPrice, support, resistance };
     }
 
@@ -681,17 +670,20 @@
     }
 
     function showStatus(msg, type = 'info') {
+        // Don't overwrite offline message if it's still relevant
+        if (!isOnline && type !== 'success' && msg !== offlineStatusMsg) {
+            statusMsgDiv.innerHTML = offlineStatusMsg;
+            statusMsgDiv.style.color = '#f59e0b';
+            return;
+        }
         statusMsgDiv.innerHTML = msg;
         statusMsgDiv.style.color = type === 'success' ? '#22c55e' : (type === 'error' ? '#ef4444' : '#f59e0b');
         setTimeout(() => { if (statusMsgDiv.innerHTML === msg) statusMsgDiv.style.color = '#e0e0e0'; }, 4000);
     }
 
-    // ==================== INITIALIZATION (with auto restart) ====================
-    // Load saved auto trading state
+    // ==================== INITIALIZATION ====================
     autoEnabled = localStorage.getItem('autoTradeEnabled') === 'true';
-    // Update button text accordingly
     startStopBtn.innerText = autoEnabled ? "⏸️ Stop Auto Trading" : "🤖 Start Auto Trading";
-    // Load other settings
     const savedTF = localStorage.getItem('selectedTF');
     if (savedTF) { selectedTF = savedTF; document.getElementById('timeframeSelect').value = selectedTF; }
     audioEnabled = localStorage.getItem('audioAlertsEnabled') === 'true';
@@ -700,14 +692,12 @@
     loadUserData();
     updateMarketAndSignal();
 
-    // If auto trading was enabled, start the interval now
     if (autoEnabled) {
         if (autoInterval) clearInterval(autoInterval);
         autoInterval = setInterval(checkAndTrade, 10000);
         setTimeout(checkAndTrade, 2000);
     }
 
-    // Periodically update price and close positions
     setInterval(async () => {
         await updateMarketAndSignal();
         await autoClosePositions();
