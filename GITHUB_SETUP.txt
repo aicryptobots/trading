@@ -1,0 +1,7 @@
+GITHUB QUICK SETUP
+==================
+1. Upload the contents of this folder to your GitHub repository.
+2. In Settings -> Pages, select GitHub Actions if needed. The included workflow publishes /docs.
+3. The public Pages site is read-only by design.
+4. Run the full Python/MT5 dashboard on your private Windows PC/VPS.
+5. Never upload MT5 credentials or WEB_API_TOKEN to GitHub.

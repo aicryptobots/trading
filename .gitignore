@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*.log
+.env
+.venv/
+venv/
+position_state.json
+market_data.json
+signal.json
+last_processed_m3.json
+.DS_Store
